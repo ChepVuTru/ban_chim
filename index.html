@@ -170,6 +170,7 @@ function tryStart(){
 function start(n){
   state='play';score=0;shots=n;endT=0;elapsed=0;earned=[];topR=null;birds=[];parts=[];pops=[];spawnT=.2;
   $('score').textContent=0;$('shots').textContent=n;
+  renderV(null); // xóa voucher của ván trước khi bắt đầu ván mới
   $('code').value='';$('err').textContent='';
   $('panel').hidden=true;document.body.classList.add('play');
 }
