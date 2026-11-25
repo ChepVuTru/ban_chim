@@ -45,6 +45,7 @@ body.play canvas{cursor:none}
 .legend li b{letter-spacing:.05em}
 .copy{font-size:14px;padding:5px 12px;border-radius:10px;margin-left:auto}
 button:disabled{opacity:.5;cursor:default}
+.ver{margin-top:10px;font-size:12px;opacity:.55}
 .legend i{width:18px;height:18px;border-radius:50%;border:2px solid rgba(0,0,0,.35);flex:none}
 label{display:block;font-size:15px;font-weight:800;margin:6px 0}
 .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -73,8 +74,6 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
       <li><i style="background:#ffc233"></i>Chim vừa: 20 điểm</li>
       <li><i style="background:#5b8def"></i>Chim to, chậm: 10 điểm</li>
     </ul>
-    <h2>Mốc điểm và phần thưởng</h2>
-    <ul class="legend" id="rw"></ul>
     <div id="vbox" hidden><h2>Voucher của bạn</h2><ul class="legend" id="vlist"></ul></div>
     <label for="code">Mã của bạn</label>
     <div class="row">
@@ -82,6 +81,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
       <button id="go">Bắt đầu</button>
     </div>
     <div id="err" role="alert"></div>
+    <div class="ver">Phiên bản 4</div>
   </div>
 </div>
 <script>
@@ -99,7 +99,6 @@ let CODES={},REWARDS=[];
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d');
 const T=[{r:15,pts:30,min:300,max:420,c:'#ff5d5d'},{r:22,pts:20,min:200,max:300,c:'#ffc233'},{r:32,pts:10,min:120,max:200,c:'#5b8def'}];
-const MEDAL=['#cd7f32','#c9ced6','#ffd23f'];
 let W,H,K=1,C={},birds=[],parts=[],pops=[],clouds=[];
 let state='menu',score=0,shots=0,best=0,earned=[],topR=null,endT=0,elapsed=0,mx=-99,my=-99,kick=0,last=0,spawnT=.3,tt;
 try{best=+localStorage.getItem('bird-best')||0}catch(e){}
@@ -115,19 +114,6 @@ clouds=[...Array(5)].map(()=>({x:Math.random()*W,y:H*(.06+Math.random()*.4),s:.6
 
 let ac;
 function snd(ok){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type=ok?'triangle':'square';o.frequency.setValueAtTime(ok?520:140,t);o.frequency.exponentialRampToValueAtTime(ok?900:60,t+.12);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.15);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+.16)}catch(e){}}
-
-function renderRW(){
-  $('rw').innerHTML='';
-  REWARDS.forEach((r,i)=>{
-    const li=document.createElement('li'),d=r===topR;
-    if(d)li.className='done';
-    const dot=document.createElement('i');dot.style.background=r.color||MEDAL[i%3];
-    li.appendChild(dot);
-    li.appendChild(document.createTextNode(r.score+' điểm: '+r.title+(r.bonus?' (+'+r.bonus+' lượt bắn)':'')+(d?' ✓ bạn nhận voucher này':'')));
-    $('rw').appendChild(li);
-  });
-}
-renderRW();
 
 let vs=[];
 try{vs=JSON.parse(localStorage.getItem('bird-vouchers')||'[]')}catch(e){}
@@ -193,7 +179,7 @@ function end(){
   if(rec){best=score;$('best').textContent=best;try{localStorage.setItem('bird-best',best)}catch(e){}}
   $('title').textContent='Hết lượt bắn';
   $('msg').textContent='Bạn ghi được '+score+' điểm. '+(rec?'Đây là kỷ lục mới! ':'')+(topR?'Bạn nhận '+topR.title+', mã nằm ở danh sách bên dưới. ':'Chưa đạt mốc nào, thử lại nhé. ')+'Nhập mã mới để chơi tiếp.';
-  renderRW();$('go').textContent='Chơi tiếp';$('panel').hidden=false;$('code').focus();
+  $('go').textContent='Chơi tiếp';$('panel').hidden=false;$('code').focus();
 }
 $('go').addEventListener('click',tryStart);
 $('code').addEventListener('keydown',e=>{if(e.key==='Enter')tryStart()});
@@ -290,35 +276,31 @@ function parseCSV(txt){
     out.push(cur.trim());return out;
   });
 }
-function rowsOf(txt){
-  const t=parseCSV(txt),h=(t.shift()||[]).map(s=>s.toLowerCase());
-  return t.map(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]||'');return o});
-}
 function setData(codesTxt,vTxt){
   CODES={};
-  rowsOf(codesTxt).forEach(r=>{const n=parseInt(r.shots,10),c=(r.code||'').toUpperCase();if(c&&n>0)CODES[c]=n});
+  parseCSV(codesTxt).forEach(r=>{const n=parseInt(r[1],10),c=(r[0]||'').toUpperCase();if(c&&n>0)CODES[c]=n});
   const m={};
-  rowsOf(vTxt).forEach(r=>{
-    const s=parseInt(r.score,10),v=r.voucher;
+  parseCSV(vTxt).forEach(r=>{
+    const s=parseInt(r[0],10),v=r[1];
     if(!(s>0)||!v)return;
     const t=m[s]||(m[s]={score:s,title:'',note:'',bonus:0,vouchers:[]});
-    t.vouchers.push(v);t.title=t.title||r.title;t.note=t.note||r.note;t.bonus=t.bonus||(parseInt(r.bonus,10)||0);
+    t.vouchers.push(v);t.title=t.title||r[2]||'';t.note=t.note||r[3]||'';t.bonus=t.bonus||(parseInt(r[4],10)||0);
   });
   REWARDS=Object.values(m).sort((a,b)=>a.score-b.score);
   REWARDS.forEach(r=>{r.title=r.title||'Voucher '+r.score+' điểm'});
-  renderRW();
 }
 async function load(){
   $('go').disabled=true;$('err').textContent='Đang tải dữ liệu…';
   try{
-    const g=async f=>{const r=await fetch(f+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;return r.text()};
+    const g=async f=>{const r=await fetch(f+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(f);return r.text()};
     const [a,b]=await Promise.all([g('codes.csv'),g('vouchers.csv')]);
     setData(a,b);
-    if(!Object.keys(CODES).length||!REWARDS.length)throw 0;
+    if(!Object.keys(CODES).length||!REWARDS.length)throw new Error('dòng hợp lệ trong codes.csv hoặc vouchers.csv');
     $('err').textContent='';
   }catch(e){
     setData(SAMPLE_CODES,SAMPLE_VOUCHERS);
-    $('err').textContent='Không đọc được codes.csv hoặc vouchers.csv, đang dùng dữ liệu mẫu.';
+    const w=e&&e.message&&/csv/.test(e.message)?e.message:'codes.csv và vouchers.csv';
+    $('err').textContent='Không đọc được '+w+', đang dùng mã mẫu.';
   }
   $('go').disabled=false;
 }
