@@ -74,7 +74,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
       <li><i style="background:#ffc233"></i>Chim vừa: 20 điểm</li>
       <li><i style="background:#5b8def"></i>Chim to, chậm: 10 điểm</li>
     </ul>
-    <div id="vbox" hidden><h2>Voucher của bạn</h2><ul class="legend" id="vlist"></ul></div>
+    <div id="vbox" hidden><h2>Voucher cao nhất của bạn</h2><ul class="legend" id="vlist"></ul></div>
     <label for="code">Mã của bạn</label>
     <div class="row">
       <input id="code" type="text" placeholder="Nhập mã" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24">
@@ -117,23 +117,23 @@ function snd(ok){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)(
 
 let vs=[];
 try{vs=JSON.parse(localStorage.getItem('bird-vouchers')||'[]')}catch(e){}
+// vs chỉ dùng để nhớ các mã đã phát (tránh phát trùng), không dùng để hiển thị
 function saveV(r){
   if(!r.voucher||vs.some(v=>v.voucher===r.voucher))return;
   vs.push({title:r.title,voucher:r.voucher});
   try{localStorage.setItem('bird-vouchers',JSON.stringify(vs))}catch(e){}
-  renderV();
 }
-function renderV(){
-  $('vbox').hidden=!vs.length;$('vlist').innerHTML='';
-  vs.slice().reverse().forEach(v=>{
-    const li=document.createElement('li'),b=document.createElement('b'),bt=document.createElement('button');
-    b.textContent=v.voucher;bt.textContent='Sao chép';bt.className='copy';
-    bt.onclick=()=>{try{navigator.clipboard.writeText(v.voucher);bt.textContent='Đã chép'}catch(e){}};
-    li.appendChild(document.createTextNode(v.title+': '));li.appendChild(b);li.appendChild(bt);
-    $('vlist').appendChild(li);
-  });
+// Chỉ hiển thị đúng 1 voucher (voucher cao nhất của ván vừa chơi), hoặc ẩn nếu không có
+function renderV(v){
+  $('vlist').innerHTML='';$('vbox').hidden=!v;
+  if(!v)return;
+  const li=document.createElement('li'),b=document.createElement('b'),bt=document.createElement('button');
+  b.textContent=v.voucher;bt.textContent='Sao chép';bt.className='copy';
+  bt.onclick=()=>{try{navigator.clipboard.writeText(v.voucher);bt.textContent='Đã chép'}catch(e){}};
+  li.appendChild(document.createTextNode(v.title+': '));li.appendChild(b);li.appendChild(bt);
+  $('vlist').appendChild(li);
 }
-renderV();
+renderV(null);
 
 function toast(r){
   const t=$('toast');
@@ -175,10 +175,11 @@ function start(n){
 }
 function end(){
   state='over';document.body.classList.remove('play');
-  const rec=score>best;if(topR)award(topR);
+  const rec=score>best,won=topR?award(topR):null;
+  renderV(won);
   if(rec){best=score;$('best').textContent=best;try{localStorage.setItem('bird-best',best)}catch(e){}}
   $('title').textContent='Hết lượt bắn';
-  $('msg').textContent='Bạn ghi được '+score+' điểm. '+(rec?'Đây là kỷ lục mới! ':'')+(topR?'Bạn nhận '+topR.title+', mã nằm ở danh sách bên dưới. ':'Chưa đạt mốc nào, thử lại nhé. ')+'Nhập mã mới để chơi tiếp.';
+  $('msg').textContent='Bạn ghi được '+score+' điểm. '+(rec?'Đây là kỷ lục mới! ':'')+(topR?'Bạn nhận '+topR.title+', mã nằm ngay bên dưới. ':'Chưa đạt mốc nào, thử lại nhé. ')+'Nhập mã mới để chơi tiếp.';
   $('go').textContent='Chơi tiếp';$('panel').hidden=false;$('code').focus();
 }
 $('go').addEventListener('click',tryStart);
@@ -264,7 +265,9 @@ requestAnimationFrame(frame);
 
 function award(r){
   const fresh=r.vouchers.filter(c=>!vs.some(v=>v.voucher===c)),pool=fresh.length?fresh:r.vouchers;
-  saveV({title:r.title,voucher:pool[Math.floor(Math.random()*pool.length)]});
+  const won={title:r.title,voucher:pool[Math.floor(Math.random()*pool.length)]};
+  saveV(won);
+  return won;
 }
 function parseCSV(txt){
   txt=txt.replace(/^\uFEFF/,'');
