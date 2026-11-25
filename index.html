@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bắn chim</title>
+<style>
+:root{
+  --sky1:#7fcdf2;--sky2:#fde6c4;--cloud:rgba(255,255,255,.85);--sun:#ffd166;
+  --h1:#86c97f;--h2:#4fa66a;--ink:#16324f;--panel:rgba(255,255,255,.92);--accent:#d43a22;--err:#c0291b;
+  color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sky1:#1c1b4d;--sky2:#e38b6d;--cloud:rgba(255,205,190,.22);--sun:#fff3d6;
+    --h1:#2d3a66;--h2:#1b2547;--ink:#f4eefc;--panel:rgba(24,24,58,.92);--err:#ff9b8c;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --sky1:#1c1b4d;--sky2:#e38b6d;--cloud:rgba(255,205,190,.22);--sun:#fff3d6;
+  --h1:#2d3a66;--h2:#1b2547;--ink:#f4eefc;--panel:rgba(24,24,58,.92);--err:#ff9b8c;color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--sky1);font-family:"Trebuchet MS","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink)}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+body.play canvas{cursor:none}
+#hud{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 0;pointer-events:none}
+.stat{background:var(--panel);border-radius:14px;padding:6px 16px;line-height:1.05;min-width:76px}
+.stat span{display:block;font-size:13px;font-weight:600;opacity:.8}
+.stat b{display:block;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+#panel{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.12)}
+#panel[hidden]{display:none}
+.card{background:var(--panel);border-radius:22px;padding:24px 26px;max-width:440px;width:100%;box-sizing:border-box;max-height:calc(100vh - 40px);overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.card h1{margin:0 0 6px;font-size:38px;line-height:1.05;font-weight:800}
+.card h2{margin:4px 0 8px;font-size:17px;font-weight:800}
+.card p{margin:0 0 14px;font-size:17px;line-height:1.4;font-weight:600}
+.legend{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:5px;font-size:16px;font-weight:600}
+.legend li{display:flex;align-items:center;gap:10px}
+.legend li.done{font-weight:800}
+.legend li b{letter-spacing:.05em}
+.copy{font-size:14px;padding:5px 12px;border-radius:10px;margin-left:auto}
+button:disabled{opacity:.5;cursor:default}
+.ver{margin-top:10px;font-size:12px;opacity:.55}
+.legend i{width:18px;height:18px;border-radius:50%;border:2px solid rgba(0,0,0,.35);flex:none}
+label{display:block;font-size:15px;font-weight:800;margin:6px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+input{flex:1 1 150px;min-width:0;font:inherit;font-size:20px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:10px 14px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink)}
+input::placeholder{opacity:.5;font-weight:600;letter-spacing:0;text-transform:none}
+#err{min-height:1.4em;margin-top:8px;font-size:15px;font-weight:800;color:var(--err)}
+button{font:inherit;font-size:20px;font-weight:800;background:var(--accent);color:#fff;border:0;border-radius:14px;padding:10px 24px;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.wallet{font-size:17px;font-weight:700;margin:0 0 12px}.wallet b{font-size:24px;font-weight:800}
+.items{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+.items li{display:flex;align-items:center;gap:10px;padding:8px 12px;border:2px solid var(--ink);border-radius:14px;font-size:16px;font-weight:700}
+.items li div{flex:1;min-width:0}
+.items small{display:block;font-size:13px;font-weight:600;opacity:.75}
+.items button{font-size:16px;padding:6px 14px;flex:none}
+.alt{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.nav{margin-top:12px}.nav button{flex:1 1 140px;font-size:17px;padding:9px 14px}
+#shopmsg{min-height:1.4em;margin-bottom:8px;font-size:15px;font-weight:800}
+#pay{border:2px dashed var(--ink);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:15px;font-weight:600;line-height:1.55}
+#pay img{max-width:180px;width:100%;display:block;margin:8px 0}
+#pay a{color:inherit;font-weight:800}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="stat"><span>Điểm</span><b id="score">0</b></div>
+  <div class="stat"><span>Lượt bắn</span><b id="shots">0</b></div>
+  <div class="stat"><span>Kỷ lục</span><b id="best">0</b></div>
+</div>
+<div id="panel">
+  <div class="card" id="home">
+    <h1 id="title">Bắn chim</h1>
+    <p id="msg">Nhập mã để nhận lượt bắn. Rê chuột để ngắm, nhấp chuột để bắn. Điểm ghi được sẽ được lưu lại để đổi voucher.</p>
+    <div class="wallet">Điểm của bạn: <b class="bal">0</b></div>
+    <h2>Điểm mỗi con chim</h2>
+    <ul class="legend">
+      <li><i style="background:#ff5d5d"></i>Chim nhỏ, nhanh: 30 điểm</li>
+      <li><i style="background:#ffc233"></i>Chim vừa: 20 điểm</li>
+      <li><i style="background:#5b8def"></i>Chim to, chậm: 10 điểm</li>
+    </ul>
+    <label for="code">Mã của bạn</label>
+    <div class="row">
+      <input id="code" type="text" placeholder="Nhập mã" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24">
+      <button id="go">Bắt đầu</button>
+    </div>
+    <div id="err" role="alert"></div>
+    <div class="row nav">
+      <button class="alt" data-view="shop">Đổi voucher</button>
+      <button class="alt" data-view="buy">Mua lượt chơi</button>
+    </div>
+    <div class="ver">Phiên bản 5</div>
+  </div>
+  <div class="card" id="shop" hidden>
+    <h1>Đổi voucher</h1>
+    <p>Điểm của bạn: <b class="bal">0</b>. Mỗi voucher chỉ đổi được 1 lần.</p>
+    <ul class="items" id="items"></ul>
+    <div id="shopmsg" role="status"></div>
+    <div id="mybox" hidden><h2>Voucher của bạn</h2><ul class="legend" id="mine"></ul></div>
+    <button class="alt" data-view="home">Quay lại</button>
+  </div>
+  <div class="card" id="buy" hidden>
+    <h1>Mua lượt chơi</h1>
+    <p>Chọn gói, chuyển khoản, rồi nhận mã lượt chơi để nhập vào ô “Mã của bạn”.</p>
+    <ul class="items" id="pk"></ul>
+    <div id="pay" hidden></div>
+    <button class="alt" data-view="home">Quay lại</button>
+  </div>
+</div>
+<script>
+/* ===== CẤU HÌNH ===== */
+// 3 file CSV đặt cùng thư mục với index.html:
+//   codes.csv    : mã lượt bắn             (cột: code,shots)
+//   shop.csv     : voucher đổi bằng điểm   (cột: voucher,title,note,cost) - mỗi dòng là 1 voucher, đổi 1 lần rồi biến mất
+//   packages.csv : gói mua lượt bằng tiền  (cột: title,shots,price)
+const ONE_USE=true; // true: mỗi mã lượt bắn chỉ dùng 1 lần trên mỗi trình duyệt
+const USE_SAMPLE=true; // true: không đọc được file thì dùng dữ liệu mẫu. Khi chạy thật hãy đặt false
+// Thông tin nhận tiền (qr: đường dẫn ảnh QR, ví dụ 'qr.png', để trống nếu không dùng)
+const PAY={bank:'Tên ngân hàng',acc:'0000000000',name:'TEN CHU TAI KHOAN',qr:'',contact:'https://zalo.me/0000000000',contactLabel:'Zalo'};
+const SAMPLE_CODES='code,shots\nCHIM10,10\nCHIM20,20\nVIP50,50';
+const SAMPLE_SHOP='voucher,title,note,cost\nGIAM10-0001,Voucher giảm 10%,Áp dụng mọi đơn,60\nGIAM10-0002,Voucher giảm 10%,Áp dụng mọi đơn,60\nGIAM20-0001,Voucher giảm 20%,Đơn từ 200k,150';
+const SAMPLE_PACKS='title,shots,price\nGói 10 lượt,10,10000\nGói 30 lượt,30,25000\nGói 60 lượt,60,45000';
+let CODES={},SHOP=[],PACKS=[];
+/* ===================== */
+
+const $=id=>document.getElementById(id);
+const cv=$('c'),ctx=cv.getContext('2d');
+const T=[{r:15,pts:30,min:300,max:420,c:'#ff5d5d'},{r:22,pts:20,min:200,max:300,c:'#ffc233'},{r:32,pts:10,min:120,max:200,c:'#5b8def'}];
+let W,H,K=1,C={},birds=[],parts=[],pops=[],clouds=[];
+let state='menu',score=0,shots=0,best=0,endT=0,elapsed=0,mx=-99,my=-99,kick=0,last=0,spawnT=.3,tt;
+try{best=+localStorage.getItem('bird-best')||0}catch(e){}
+$('best').textContent=best;
+
+function theme(){const s=getComputedStyle(document.documentElement);['sky1','sky2','cloud','sun','h1','h2','ink'].forEach(k=>C[k]=s.getPropertyValue('--'+k).trim())}
+function resize(){const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);K=Math.max(.7,Math.min(1.25,W/1000))}
+theme();resize();
+addEventListener('resize',resize);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',theme);
+new MutationObserver(theme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+clouds=[...Array(5)].map(()=>({x:Math.random()*W,y:H*(.06+Math.random()*.4),s:.6+Math.random()*.8,v:8+Math.random()*14}));
+
+let ac;
+function snd(ok){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type=ok?'triangle':'square';o.frequency.setValueAtTime(ok?520:140,t);o.frequency.exponentialRampToValueAtTime(ok?900:60,t+.12);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.15);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+.16)}catch(e){}}
+
+let pts=0,owned=[];
+try{pts=+localStorage.getItem('bird-pts')||0}catch(e){}
+try{owned=JSON.parse(localStorage.getItem('bird-vouchers')||'[]')}catch(e){} // voucher đã đổi (cũng là danh sách đã bán)
+const save=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const money=n=>n.toLocaleString('vi-VN')+'đ';
+function showBal(){document.querySelectorAll('.bal').forEach(e=>e.textContent=pts)}
+function addPts(n){pts+=n;save('bird-pts',pts);showBal()}
+showBal();
+
+function view(v){
+  ['home','shop','buy'].forEach(n=>$(n).hidden=n!==v);
+  $('shopmsg').textContent='';
+  if(v==='shop')drawShop();
+  if(v==='buy')drawBuy();
+  if(v==='home')$('code').focus();
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));
+
+function codeLine(v){
+  const li=document.createElement('li'),b=document.createElement('b'),bt=document.createElement('button');
+  b.textContent=v.voucher;bt.textContent='Sao chép';bt.className='copy';
+  bt.onclick=()=>{try{navigator.clipboard.writeText(v.voucher);bt.textContent='Đã chép'}catch(e){}};
+  li.append(v.title+': ',b,bt);return li;
+}
+function drawShop(){
+  const ul=$('items');ul.innerHTML='';
+  const left=SHOP.filter(i=>!owned.some(v=>v.voucher===i.voucher));
+  if(!left.length){const li=document.createElement('li');li.textContent='Hiện chưa có voucher nào để đổi.';ul.appendChild(li)}
+  left.forEach(i=>{
+    const li=document.createElement('li'),d=document.createElement('div'),bt=document.createElement('button');
+    d.textContent=i.title;
+    if(i.note){const s=document.createElement('small');s.textContent=i.note;d.appendChild(s)}
+    bt.textContent=i.cost+' điểm';bt.disabled=pts<i.cost;bt.onclick=()=>redeem(i);
+    li.append(d,bt);ul.appendChild(li);
+  });
+  $('mine').innerHTML='';owned.forEach(v=>$('mine').appendChild(codeLine(v)));$('mybox').hidden=!owned.length;
+}
+function redeem(i){
+  if(pts<i.cost||owned.some(v=>v.voucher===i.voucher))return;
+  if(!confirm('Đổi "'+i.title+'" với '+i.cost+' điểm?'))return;
+  pts-=i.cost;save('bird-pts',pts);
+  owned.push({title:i.title,voucher:i.voucher});save('bird-vouchers',JSON.stringify(owned));
+  showBal();drawShop();
+  $('shopmsg').textContent='Đổi thành công! Mã voucher nằm ở mục “Voucher của bạn” bên dưới.';
+}
+
+function drawBuy(){
+  const ul=$('pk');ul.innerHTML='';$('pay').hidden=true;
+  if(!PACKS.length){const li=document.createElement('li');li.textContent='Hiện chưa có gói nào.';ul.appendChild(li)}
+  PACKS.forEach(p=>{
+    const li=document.createElement('li'),d=document.createElement('div'),s=document.createElement('small'),bt=document.createElement('button');
+    d.textContent=p.title;s.textContent=p.shots+' lượt bắn';d.appendChild(s);
+    bt.textContent=money(p.price);bt.onclick=()=>pay(p);
+    li.append(d,bt);ul.appendChild(li);
+  });
+}
+function pay(p){
+  const box=$('pay'),memo='CHIM'+Math.random().toString(36).slice(2,6).toUpperCase();
+  box.innerHTML='';
+  [['Gói',p.title+' ('+p.shots+' lượt)'],['Số tiền',money(p.price)],['Ngân hàng',PAY.bank],['Số tài khoản',PAY.acc],['Chủ tài khoản',PAY.name],['Nội dung CK',memo]].forEach(([k,v])=>{
+    const d=document.createElement('div'),b=document.createElement('b');
+    b.textContent=v;d.append(k+': ',b);box.appendChild(d);
+  });
+  if(PAY.qr){const im=new Image();im.src=PAY.qr;im.alt='Mã QR chuyển khoản';box.appendChild(im)}
+  const n=document.createElement('div');
+  n.textContent='Sau khi chuyển khoản, gửi nội dung CK ở trên qua '+PAY.contactLabel+' để nhận mã lượt chơi, rồi bấm Quay lại và nhập mã vào ô “Mã của bạn”.';
+  box.appendChild(n);
+  if(PAY.contact){const a=document.createElement('a');a.href=PAY.contact;a.target='_blank';a.rel='noopener';a.textContent='Mở '+PAY.contactLabel;box.appendChild(a)}
+  box.hidden=false;
+}
+
+function spawn(){
+  const w=Math.random(),t=w<.25?T[0]:w<.6?T[1]:T[2],dir=Math.random()<.5?1:-1,y=H*.1+Math.random()*H*.5;
+  birds.push({t,dir,r:t.r*K,x:dir>0?-70:W+70,y,base:y,vx:dir*(t.min+Math.random()*(t.max-t.min))*K,ph:Math.random()*6,wob:15+Math.random()*30,fl:Math.random()*6,dead:false,vy:0,rot:0});
+}
+const hit=(b,x,y)=>Math.hypot(b.x-x,b.y-y)<b.r*1.3;
+
+function kill(b){
+  b.dead=true;b.vy=-120;
+  score+=b.t.pts;$('score').textContent=score;
+  pops.push({x:b.x,y:b.y-b.r,t:0,txt:'+'+b.t.pts});
+  for(let i=0;i<12;i++)parts.push({x:b.x,y:b.y,vx:(Math.random()-.5)*340,vy:-Math.random()*220,rot:Math.random()*6,vr:(Math.random()-.5)*12,life:.9,c:i%3?b.t.c:'#fff'});
+  addPts(b.t.pts); // lưu điểm vào ví ngay khi bắn trúng
+}
+
+const used=()=>{try{return JSON.parse(localStorage.getItem('bird-used')||'[]')}catch(e){return[]}};
+function tryStart(){
+  const code=$('code').value.trim().toUpperCase();
+  if(!code){$('err').textContent='Hãy nhập mã của bạn.';return}
+  if(!Object.prototype.hasOwnProperty.call(CODES,code)){$('err').textContent='Mã không đúng. Hãy kiểm tra lại.';return}
+  if(ONE_USE&&used().includes(code)){$('err').textContent='Mã này đã được sử dụng.';return}
+  if(ONE_USE){try{localStorage.setItem('bird-used',JSON.stringify(used().concat(code)))}catch(e){}}
+  start(CODES[code]);
+}
+function start(n){
+  state='play';score=0;shots=n;endT=0;elapsed=0;birds=[];parts=[];pops=[];spawnT=.2;
+  $('score').textContent=0;$('shots').textContent=n;
+  $('code').value='';$('err').textContent='';
+  $('panel').hidden=true;document.body.classList.add('play');
+}
+function end(){
+  state='over';document.body.classList.remove('play');
+  const rec=score>best;
+  if(rec){best=score;$('best').textContent=best;save('bird-best',best)}
+  $('title').textContent='Hết lượt bắn';
+  $('msg').textContent='Bạn ghi được '+score+' điểm'+(rec?', kỷ lục mới!':'.')+' Điểm đã được lưu vào ví. Nhập mã mới để chơi tiếp, hoặc vào “Đổi voucher”.';
+  $('go').textContent='Chơi tiếp';$('panel').hidden=false;view('home');
+}
+$('go').addEventListener('click',tryStart);
+$('code').addEventListener('keydown',e=>{if(e.key==='Enter')tryStart()});
+$('code').addEventListener('input',()=>{$('err').textContent=''});
+
+addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY});
+cv.addEventListener('pointerdown',e=>{
+  mx=e.clientX;my=e.clientY;
+  if(state!=='play'||shots<=0)return;
+  shots--;kick=1;let h=null;
+  for(let i=birds.length-1;i>=0;i--){const b=birds[i];if(!b.dead&&hit(b,mx,my)){h=b;break}}
+  if(h)kill(h);
+  $('shots').textContent=shots;
+  if(shots<=0)endT=1.2;
+  snd(!!h);
+});
+
+function update(dt){
+  clouds.forEach(c=>{c.x+=c.v*dt;if(c.x>W+160)c.x=-200});
+  spawnT-=dt;
+  if(spawnT<=0&&birds.length<12){spawn();spawnT=state==='play'?Math.max(.4,1-Math.min(elapsed,60)*.01)*(.6+Math.random()*.8):1+Math.random()}
+  birds.forEach(b=>{
+    if(b.dead){b.vy+=900*dt;b.y+=b.vy*dt;b.x+=b.vx*.25*dt;b.rot+=b.dir*5*dt}
+    else{b.x+=b.vx*dt;b.y=b.base+Math.sin(b.x*.012+b.ph)*b.wob;b.fl+=dt*(10+Math.abs(b.vx)/40)}
+  });
+  birds=birds.filter(b=>b.y<H+90&&b.x>-150&&b.x<W+150);
+  parts.forEach(p=>{p.vy+=300*dt;p.vx*=.98;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;p.life-=dt});
+  parts=parts.filter(p=>p.life>0);
+  pops.forEach(p=>{p.y-=55*dt;p.t+=dt});
+  pops=pops.filter(p=>p.t<.9);
+  kick=Math.max(0,kick-dt*5);
+  if(state==='play'){elapsed+=dt;if(endT>0){endT-=dt;if(endT<=0)end()}}
+}
+
+function circ(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function hills(col,base,amp,fr,off){ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(0,H);for(let x=0;x<=W+20;x+=20)ctx.lineTo(x,H-base-Math.sin(x*fr+off)*amp);ctx.lineTo(W,H);ctx.fill()}
+
+function drawBird(b){
+  const r=b.r;
+  ctx.save();ctx.translate(b.x,b.y);if(b.dead)ctx.rotate(b.rot);ctx.scale(b.dir,1);
+  ctx.lineWidth=2;ctx.strokeStyle='rgba(0,0,0,.35)';ctx.fillStyle=b.t.c;
+  ctx.beginPath();ctx.moveTo(-r*.8,0);ctx.lineTo(-r*1.5,-r*.5);ctx.lineTo(-r*1.4,r*.25);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,r,r*.65,0,0,7);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(r*.8,-r*.3,r*.45,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#ff9f1c';ctx.beginPath();ctx.moveTo(r*1.18,-r*.45);ctx.lineTo(r*1.7,-r*.25);ctx.lineTo(r*1.18,-r*.1);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#fff';circ(r*.92,-r*.38,r*.15);ctx.fillStyle='#111';circ(r*.96,-r*.38,r*.07);
+  const f=b.dead?.9:Math.sin(b.fl);
+  ctx.translate(-r*.1,-r*.05);ctx.rotate(f*.75);
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.beginPath();ctx.ellipse(-r*.35,0,r*.65,r*.2,0,0,7);ctx.fill();ctx.stroke();
+  ctx.restore();
+}
+
+function crosshair(){
+  if(state!=='play')return;
+  const hot=birds.some(b=>!b.dead&&hit(b,mx,my)),s=1+kick*.45;
+  const p=new Path2D();p.arc(0,0,16,0,7);
+  [[-26,-9],[9,26]].forEach(([a,b])=>{p.moveTo(a,0);p.lineTo(b,0);p.moveTo(0,a);p.lineTo(0,b)});
+  ctx.save();ctx.translate(mx,my);ctx.scale(s,s);ctx.lineCap='round';
+  ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=6;ctx.stroke(p);
+  ctx.strokeStyle=hot?'#e11d1d':'#111827';ctx.lineWidth=2.5;ctx.stroke(p);
+  ctx.fillStyle=hot?'#e11d1d':'#111827';circ(0,0,2.5);
+  ctx.restore();
+}
+
+function draw(){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,C.sky1);g.addColorStop(1,C.sky2);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=C.sun;circ(W*.82,H*.2,44*K);
+  ctx.fillStyle=C.cloud;
+  clouds.forEach(c=>{const r=26*c.s*K;circ(c.x,c.y,r);circ(c.x+r,c.y+r*.2,r*1.2);circ(c.x+2*r,c.y,r*.9)});
+  birds.forEach(drawBird);
+  hills(C.h1,H*.14,H*.05,.006,1);hills(C.h2,H*.05,H*.03,.01,3);
+  parts.forEach(p=>{ctx.save();ctx.globalAlpha=Math.min(1,p.life/.5);ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;ctx.beginPath();ctx.ellipse(0,0,8*K,3*K,0,0,7);ctx.fill();ctx.restore()});
+  ctx.textAlign='center';ctx.font='800 '+Math.round(26*K)+'px "Trebuchet MS","Segoe UI",system-ui,sans-serif';ctx.lineWidth=5;ctx.lineJoin='round';
+  pops.forEach(p=>{ctx.globalAlpha=1-p.t/.9;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.strokeText(p.txt,p.x,p.y);ctx.fillStyle='#fff';ctx.fillText(p.txt,p.x,p.y)});
+  ctx.globalAlpha=1;
+  crosshair();
+}
+
+function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;update(dt);draw();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+function parseCSV(txt){
+  txt=txt.replace(/^\uFEFF/,'');
+  const lines=txt.split(/\r?\n/).filter(l=>l.trim()),first=lines[0]||'';
+  const d=first.includes(';')&&!first.includes(',')?';':',';
+  return lines.map(l=>{
+    const out=[];let cur='',q=false;
+    for(const ch of l){if(ch==='"')q=!q;else if(ch===d&&!q){out.push(cur.trim());cur=''}else cur+=ch}
+    out.push(cur.trim());return out;
+  });
+}
+function setData(c,s,p){
+  CODES={};SHOP=[];PACKS=[];
+  parseCSV(c).forEach(r=>{const n=parseInt(r[1],10),k=(r[0]||'').toUpperCase();if(k&&n>0)CODES[k]=n});
+  const seen={};
+  parseCSV(s).forEach(r=>{const cost=parseInt(r[3],10);if(r[0]&&cost>0&&!seen[r[0]]){seen[r[0]]=1;SHOP.push({voucher:r[0],title:r[1]||'Voucher',note:r[2]||'',cost})}});
+  parseCSV(p).forEach(r=>{const shots=parseInt(r[1],10),price=parseInt(r[2],10);if(shots>0&&price>0)PACKS.push({title:r[0]||shots+' lượt',shots,price})});
+}
+async function load(){
+  $('go').disabled=true;$('err').textContent='Đang tải dữ liệu…';
+  const bad=[],g=async f=>{try{const r=await fetch(f+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;return await r.text()}catch(e){bad.push(f);return null}};
+  const [a,s,p]=await Promise.all([g('codes.csv'),g('shop.csv'),g('packages.csv')]),u=USE_SAMPLE;
+  setData(a??(u?SAMPLE_CODES:''),s??(u?SAMPLE_SHOP:''),p??(u?SAMPLE_PACKS:''));
+  $('err').textContent=bad.length?'Không đọc được '+bad.join(', ')+(u?', đang dùng dữ liệu mẫu.':'.'):'';
+  $('go').disabled=false;
+}
+load();$('code').focus();
+</script>
+</body>
+</html>
