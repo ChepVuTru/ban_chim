@@ -92,7 +92,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
       <button class="alt" data-view="shop">Đổi voucher</button>
       <button class="alt" data-view="buy">Mua lượt chơi</button>
     </div>
-    <div class="ver">Phiên bản 5</div>
+    <div class="ver">Phiên bản 6</div>
   </div>
   <div class="card" id="shop" hidden>
     <h1>Đổi voucher</h1>
@@ -118,8 +118,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
 //   packages.csv : gói mua lượt bằng tiền  (cột: title,shots,price)
 const ONE_USE=true; // true: mỗi mã lượt bắn chỉ dùng 1 lần trên mỗi trình duyệt
 const USE_SAMPLE=true; // true: không đọc được file thì dùng dữ liệu mẫu. Khi chạy thật hãy đặt false
-// Thông tin nhận tiền (qr: đường dẫn ảnh QR, ví dụ 'qr.png', để trống nếu không dùng)
-const PAY={bank:'Tên ngân hàng',acc:'0000000000',name:'TEN CHU TAI KHOAN',qr:'',contact:'https://zalo.me/0000000000',contactLabel:'Zalo'};
+// Thông tin nhận tiền. Chỉ dùng QR thì để file ảnh cạnh index.html (qr:'qr.png') và để trống bank/acc/name. Dòng nào để trống sẽ không hiện
+const PAY={bank:'',acc:'',name:'',qr:'qr.png',contact:'',contactLabel:'Zalo'}; // contact: link Zalo/Messenger để khách nhắn nhận mã, để trống nếu không dùng
 const SAMPLE_CODES='code,shots\nCHIM10,10\nCHIM20,20\nVIP50,50';
 const SAMPLE_SHOP='voucher,title,note,cost\nGIAM10-0001,Voucher giảm 10%,Áp dụng mọi đơn,60\nGIAM10-0002,Voucher giảm 10%,Áp dụng mọi đơn,60\nGIAM20-0001,Voucher giảm 20%,Đơn từ 200k,150';
 const SAMPLE_PACKS='title,shots,price\nGói 10 lượt,10,10000\nGói 30 lượt,30,25000\nGói 60 lượt,60,45000';
@@ -147,7 +147,7 @@ function snd(ok){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)(
 
 let pts=0,owned=[];
 try{pts=+localStorage.getItem('bird-pts')||0}catch(e){}
-try{owned=JSON.parse(localStorage.getItem('bird-vouchers')||'[]')}catch(e){} // voucher đã đổi (cũng là danh sách đã bán)
+try{owned=JSON.parse(localStorage.getItem('bird-owned')||'[]')}catch(e){} // voucher đã đổi (cũng là danh sách đã bán)
 const save=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const money=n=>n.toLocaleString('vi-VN')+'đ';
 function showBal(){document.querySelectorAll('.bal').forEach(e=>e.textContent=pts)}
@@ -186,7 +186,7 @@ function redeem(i){
   if(pts<i.cost||owned.some(v=>v.voucher===i.voucher))return;
   if(!confirm('Đổi "'+i.title+'" với '+i.cost+' điểm?'))return;
   pts-=i.cost;save('bird-pts',pts);
-  owned.push({title:i.title,voucher:i.voucher});save('bird-vouchers',JSON.stringify(owned));
+  owned.push({title:i.title,voucher:i.voucher});save('bird-owned',JSON.stringify(owned));
   showBal();drawShop();
   $('shopmsg').textContent='Đổi thành công! Mã voucher nằm ở mục “Voucher của bạn” bên dưới.';
 }
@@ -204,13 +204,13 @@ function drawBuy(){
 function pay(p){
   const box=$('pay'),memo='CHIM'+Math.random().toString(36).slice(2,6).toUpperCase();
   box.innerHTML='';
-  [['Gói',p.title+' ('+p.shots+' lượt)'],['Số tiền',money(p.price)],['Ngân hàng',PAY.bank],['Số tài khoản',PAY.acc],['Chủ tài khoản',PAY.name],['Nội dung CK',memo]].forEach(([k,v])=>{
+  [['Gói',p.title+' ('+p.shots+' lượt)'],['Số tiền',money(p.price)],['Ngân hàng',PAY.bank],['Số tài khoản',PAY.acc],['Chủ tài khoản',PAY.name],['Nội dung CK',memo]].filter(r=>r[1]).forEach(([k,v])=>{
     const d=document.createElement('div'),b=document.createElement('b');
     b.textContent=v;d.append(k+': ',b);box.appendChild(d);
   });
-  if(PAY.qr){const im=new Image();im.src=PAY.qr;im.alt='Mã QR chuyển khoản';box.appendChild(im)}
+  if(PAY.qr){const im=new Image();im.src=PAY.qr;im.alt='Mã QR chuyển khoản';im.onerror=()=>im.remove();box.appendChild(im)}
   const n=document.createElement('div');
-  n.textContent='Sau khi chuyển khoản, gửi nội dung CK ở trên qua '+PAY.contactLabel+' để nhận mã lượt chơi, rồi bấm Quay lại và nhập mã vào ô “Mã của bạn”.';
+  n.textContent='Sau khi chuyển khoản, gửi nội dung CK ở trên '+(PAY.contact?'qua '+PAY.contactLabel:'cho shop')+' để nhận mã lượt chơi, rồi bấm Quay lại và nhập mã vào ô “Mã của bạn”.';
   box.appendChild(n);
   if(PAY.contact){const a=document.createElement('a');a.href=PAY.contact;a.target='_blank';a.rel='noopener';a.textContent='Mở '+PAY.contactLabel;box.appendChild(a)}
   box.hidden=false;
