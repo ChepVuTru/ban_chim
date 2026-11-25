@@ -91,8 +91,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
     <div class="row nav">
       <button class="alt" data-view="shop">Đổi voucher</button>
       <button class="alt" data-view="buy">Mua lượt chơi</button>
+      <button class="alt" data-view="vbox" id="mybtn">Voucher của tôi</button>
     </div>
-    <div class="ver">Phiên bản 9</div>
+    <div class="ver">Phiên bản 10</div>
   </div>
   <div class="card" id="shop" hidden>
     <h1>Đổi voucher</h1>
@@ -100,6 +101,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
     <ul class="items" id="items"></ul>
     <div id="shopmsg" role="status"></div>
     <div id="mybox" hidden><h2>Voucher của bạn</h2><ul class="legend" id="mine"></ul></div>
+    <button class="alt" data-view="home">Quay lại</button>
+  </div>
+  <div class="card" id="vbox" hidden>
+    <h1>Voucher của tôi</h1>
+    <p>Các voucher bạn đã đổi. Mã được lưu trên trình duyệt này, nhớ sao chép hoặc chụp lại để không bị mất.</p>
+    <ul class="legend" id="vlist"></ul>
     <button class="alt" data-view="home">Quay lại</button>
   </div>
   <div class="card" id="buy" hidden>
@@ -150,15 +157,16 @@ try{pts=+localStorage.getItem('bird-pts')||0}catch(e){}
 try{owned=JSON.parse(localStorage.getItem('bird-owned')||'[]')}catch(e){} // voucher đã đổi (cũng là danh sách đã bán)
 const save=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const money=n=>n.toLocaleString('vi-VN')+'đ';
-function showBal(){document.querySelectorAll('.bal').forEach(e=>e.textContent=pts)}
+function showBal(){document.querySelectorAll('.bal').forEach(e=>e.textContent=pts);$('mybtn').textContent='Voucher của tôi'+(owned.length?' ('+owned.length+')':'')}
 function addPts(n){pts+=n;save('bird-pts',pts);showBal()}
 showBal();
 
 function view(v){
-  ['home','shop','buy'].forEach(n=>$(n).hidden=n!==v);
+  ['home','shop','buy','vbox'].forEach(n=>$(n).hidden=n!==v);
   $('shopmsg').textContent='';
   if(v==='shop')drawShop();
   if(v==='buy')drawBuy();
+  if(v==='vbox')drawMine();
   if(v==='home')$('code').focus();
 }
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));
@@ -182,13 +190,18 @@ function drawShop(){
   });
   $('mine').innerHTML='';owned.forEach(v=>$('mine').appendChild(codeLine(v)));$('mybox').hidden=!owned.length;
 }
+function drawMine(){
+  const ul=$('vlist');ul.innerHTML='';
+  if(!owned.length){const li=document.createElement('li');li.textContent='Bạn chưa đổi voucher nào.';ul.appendChild(li);return}
+  owned.slice().reverse().forEach(v=>ul.appendChild(codeLine(v)));
+}
 function redeem(i){
   if(pts<i.cost||owned.some(v=>v.voucher===i.voucher))return;
   if(!confirm('Đổi "'+i.title+'" với '+i.cost+' điểm?'))return;
   pts-=i.cost;save('bird-pts',pts);
   owned.push({title:i.title,voucher:i.voucher});save('bird-owned',JSON.stringify(owned));
   showBal();drawShop();
-  $('shopmsg').textContent='Đổi thành công! Mã voucher nằm ở mục “Voucher của bạn” bên dưới.';
+  $('shopmsg').textContent='Đổi thành công! Mã voucher nằm ở mục “Voucher của bạn” bên dưới, và bạn có thể xem lại bất cứ lúc nào ở nút “Voucher của tôi” ngoài màn hình chính.';
 }
 
 function drawBuy(){
