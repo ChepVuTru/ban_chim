@@ -78,9 +78,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
     <div class="wallet">Điểm của bạn: <b class="bal">0</b></div>
     <h2>Điểm mỗi con chim</h2>
     <ul class="legend">
-      <li><i style="background:#ff5d5d"></i>Chim nhỏ, nhanh: 50 điểm</li>
-      <li><i style="background:#ffc233"></i>Chim vừa: 30 điểm</li>
-      <li><i style="background:#5b8def"></i>Chim to, chậm: 15 điểm</li>
+      <li><i style="background:#ff5d5d"></i>Chim nhỏ, nhanh: 100 điểm</li>
+      <li><i style="background:#ffc233"></i>Chim vừa: 60 điểm</li>
+      <li><i style="background:#5b8def"></i>Chim to, chậm: 30 điểm</li>
     </ul>
     <label for="code">Mã của bạn</label>
     <div class="row">
@@ -135,7 +135,7 @@ let CODES={},SHOP=[],PACKS=[];
 
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d');
-const T=[{r:15,pts:50,min:600,max:840,c:'#ff5d5d'},{r:22,pts:30,min:400,max:600,c:'#ffc233'},{r:32,pts:15,min:240,max:400,c:'#5b8def'}];
+const T=[{r:15,pts:100,min:600,max:840,c:'#ff5d5d'},{r:22,pts:60,min:400,max:600,c:'#ffc233'},{r:32,pts:30,min:240,max:400,c:'#5b8def'}];
 let W,H,K=1,C={},birds=[],parts=[],pops=[],clouds=[];
 let state='menu',score=0,shots=0,best=0,endT=0,elapsed=0,mx=-99,my=-99,kick=0,last=0,spawnT=.3,tt;
 try{best=+localStorage.getItem('bird-best')||0}catch(e){}
