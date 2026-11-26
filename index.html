@@ -60,7 +60,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
 .nav{margin-top:12px}.nav button{flex:1 1 140px;font-size:17px;padding:9px 14px}
 #shopmsg{min-height:1.4em;margin-bottom:8px;font-size:15px;font-weight:800}
 #pay{border:2px dashed var(--ink);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:15px;font-weight:600;line-height:1.55}
-#pay img{max-width:180px;width:100%;display:block;margin:8px 0}
+#pay img{max-width:240px;width:100%;display:block;margin:10px auto;background:#fff;border-radius:8px}
 #pay a{color:inherit;font-weight:800}
 </style>
 </head>
@@ -79,7 +79,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
     <h2>Điểm mỗi con chim</h2>
     <ul class="legend">
       <li><i style="background:#ff5d5d"></i>Chim nhỏ, nhanh: 100 điểm</li>
-      <li><i style="background:#ffc233"></i>Chim vừa: 60 điểm</li>
+      <li><i style="background:#ffc233"></i>Chim vừa: 50 điểm</li>
       <li><i style="background:#5b8def"></i>Chim to, chậm: 30 điểm</li>
     </ul>
     <label for="code">Mã của bạn</label>
@@ -93,7 +93,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
       <button class="alt" data-view="buy">Mua lượt chơi</button>
       <button class="alt" data-view="vbox" id="mybtn">Voucher của tôi</button>
     </div>
-    <div class="ver">Phiên bản 10</div>
+    <div class="ver">Phiên bản 11</div>
   </div>
   <div class="card" id="shop" hidden>
     <h1>Đổi voucher</h1>
@@ -125,8 +125,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
 //   packages.csv : gói mua lượt bằng tiền  (cột: title,shots,price)
 const ONE_USE=true; // true: mỗi mã lượt bắn chỉ dùng 1 lần trên mỗi trình duyệt
 const USE_SAMPLE=true; // true: không đọc được file thì dùng dữ liệu mẫu. Khi chạy thật hãy đặt false
-// Thông tin nhận tiền. Chỉ dùng QR thì để file ảnh cạnh index.html (qr:'qr.png') và để trống bank/acc/name. Dòng nào để trống sẽ không hiện
-const PAY={bank:'',acc:'',name:'',qr:'qr.png',contact:'',contactLabel:'Zalo'}; // contact: link Zalo/Messenger để khách nhắn nhận mã, để trống nếu không dùng
+// Thông tin nhận tiền (Vietcombank). qr: ảnh QR đã nhúng sẵn trong file này; muốn đổi thì thay bằng đường dẫn ảnh (vd 'qr.png'). Dòng nào để trống sẽ không hiện
+const PAY={bank:'Vietcombank',acc:'1045063446',name:'NGUYEN TRI HIEU',qr:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAjAAAAIwAQAAAACwimzCAAAFQ0lEQVR42u1dy47rNgw9rL1s0X7KLdrlFPanK8As7wD3Y7p0wC4sW5TsZGZiplfWnAAeJ34caETziKRIWRQen19AGMIQhjDvfXQqfqsqkDbV5Xjaa0FSg7KLCUMYwnwMRtcPAIjMp0RURUTm43af3xN8W9NRUl8DZqyqNYGS+j9g+sgts+1i/qajkh0tzyq7mDCEIcyn+Cb/CBQaGUUjr1iWUXYxYQhDGBe+kZVVdLVhJLLQln/YxYSpBOZ6zLdrum8ORCnCE/jGWixq/Chd2Ueg67a9h8pAGMJUC3M9BjE6841svKn3tvIeCpwwhKkUpquoNbKXfyNZ9Cb/LlAKnDCEIcyDMNLHTdJcePSYYq6NCKA6z4+rpvlyALiIK/td+x1LKv3FhvuW4/aqembnR9QTowitK0N3TE71SOoJ/lRXSWv6pKtqYjJiPCusx1PE2O5rem6aH2Cu7BvCnBgm5d900zrXvR+zSVGbrVfl/k9dKSnCEMbLZ8Cqt9Z2kF0/AVkcRX19hmw+XI2/gpuz4SXbCLSqLh75+BHm1L7m2K6koDpXUKmii9taNZVXUqWKqnkfTE2DZ/R6Lz4jN60uZCz8BM+XqkmYs8N0NfGN5ZD9Gs3IS5pXbc6cM59xrB7tHm8NAAx+rWkuj8LZSu+mle2RZUnYnNBklVuLfrGhmx0Z6plniHMwlUjK6HN5NGn0vRrxQQNcNfzwczO2a4kekpSqcyX/QUkFsHr0VlsC/D2YKp4b40/pFFsx2RaV7bFWx6CqwdOisK0xdtfHWpPa1GjcD7j2ZhwCylpaW++2N6JpyxreHeW+ZuPFSDHZn/7crAwTdbdLY2jpv6R1KOz9gwKufKO5h/e51riP4fWMU43FRJtfj6KuzIWuEkkttsEaN4m/kkUxRTumK7lgWG6YXOPFa8YfVqaVjItzns73tUkKYP7NOSImzq3hPMMdSf3+1+tvAHAREflnUAB4GYCLSA9M399egen7Ww+8/v1t+iFyAfTlzz/iHeJsbW18JjtjZv2n5H3mESVq+BlGzcb7pi6YWp7ipOGLJ9XlGj5EL0sV3+Y58IAUK1kw/GPpxYkspp7bM2UWNMfwLzmGs2/OAdMNamqoekCizQJcZDD2hvSzPQNMiyXxchH/2BaKGqrIaTtZhjZb0l7BMbx+mNH/uSlys37yc8O+uW9tXUvt+hfogB/LrzdgiTmmT/jVn29Sb6R+KO2abbzd7puN0NazjglzaM8CQ526591N27l/G6XJcwbKyM7i5dVjpQc0vYrT9SjjuEqqq0pSnJ+6Eb9JdQyLxr+v4cGcDfCuZyjXTi5jNbo7a/WUavUr/ak7Gl7Xmgu0b84C85BOjf6twZIJlDNe4sb8vVjb3BugLvum6eeGGk6YB+2bZOF8RsOfMD+1PbTJsCkrP7YZkxQ4YQhDmI/ZNzkblhk2ee369l2gNdUzhKq6ePRsjVlVJbG+jTjurUm7XbWRyvD0iElDGj7osiqFf9Vxbtukp1qyb7qJrjftMzDHhJ4vYdxhUgbQskqyfdfwzHbLe4XzqwGRkW+J5Rh+ckk12zexcmqN5aC0arbHt9aQm32z8/a9Mjcgt3TKlbYaroHekVRePZ/boPlV6m2JHm5Nw55vtNLLtXel8Dvl5gq9tWW8jK32zY23febf8uxIKVYGqml10xHBbzWe3ZFh9zrd1pctfxutnWffvNeaWjKlHCQV8Nz4jdzIgsRuVJIu6xeFYTSJknqE/QqWy3MN9+vFLSMGuPoMB1tT06jJGAVhKtBwrUjDRSkpwhCmXZj/AKt6YWOP2AphAAAAAElFTkSuQmCC',contact:'',contactLabel:'Zalo'}; // contact: link Zalo/Messenger để khách nhắn nhận mã, để trống nếu không dùng
 const SAMPLE_CODES='code,shots\nCHIM10,10\nCHIM20,20\nVIP50,50';
 const SAMPLE_SHOP='voucher,title,note,cost\nGIAM10-0001,Voucher giảm 10%,Áp dụng mọi đơn,60\nGIAM10-0002,Voucher giảm 10%,Áp dụng mọi đơn,60\nGIAM20-0001,Voucher giảm 20%,Đơn từ 200k,150';
 const SAMPLE_PACKS='title,shots,price\nGói 10 lượt,10,10000\nGói 30 lượt,30,25000\nGói 60 lượt,60,45000';
@@ -135,7 +135,7 @@ let CODES={},SHOP=[],PACKS=[];
 
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d');
-const T=[{r:15,pts:100,min:600,max:840,c:'#ff5d5d'},{r:22,pts:60,min:400,max:600,c:'#ffc233'},{r:32,pts:30,min:240,max:400,c:'#5b8def'}];
+const T=[{r:15,pts:100,min:600,max:840,c:'#ff5d5d'},{r:22,pts:50,min:400,max:600,c:'#ffc233'},{r:32,pts:30,min:240,max:400,c:'#5b8def'}];
 let W,H,K=1,C={},birds=[],parts=[],pops=[],clouds=[];
 let state='menu',score=0,shots=0,best=0,endT=0,elapsed=0,mx=-99,my=-99,kick=0,last=0,spawnT=.3,tt;
 try{best=+localStorage.getItem('bird-best')||0}catch(e){}
@@ -223,7 +223,7 @@ function pay(p){
   });
   if(PAY.qr){const im=new Image();im.src=PAY.qr;im.alt='Mã QR chuyển khoản';im.onerror=()=>im.remove();box.appendChild(im)}
   const n=document.createElement('div');
-  n.textContent='Sau khi chuyển khoản, gửi nội dung CK ở trên '+(PAY.contact?'qua '+PAY.contactLabel:'cho shop')+' để nhận mã lượt chơi, rồi bấm Quay lại và nhập mã vào ô “Mã của bạn”.';
+  n.textContent='Quét QR bằng app ngân hàng và nhập đúng số tiền, nội dung CK ở trên. Sau khi chuyển khoản, gửi nội dung CK ở trên '+(PAY.contact?'qua '+PAY.contactLabel:'cho shop')+' để nhận mã lượt chơi, rồi bấm Quay lại và nhập mã vào ô “Mã của bạn”.';
   box.appendChild(n);
   if(PAY.contact){const a=document.createElement('a');a.href=PAY.contact;a.target='_blank';a.rel='noopener';a.textContent='Mở '+PAY.contactLabel;box.appendChild(a)}
   box.hidden=false;
